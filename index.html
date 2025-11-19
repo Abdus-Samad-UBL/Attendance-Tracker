@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>L&D Attendance Tracker</title>
+    <title>UBL Attendance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .ubl-gradient {
@@ -41,7 +41,7 @@
             <div class="space-y-5">
                 <!-- Cluster Selection -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">🏢 Select Your Cluster *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">🏢 Select Cluster *</label>
                     <select id="cluster" class="w-full px-4 py-3 border-2 ubl-border rounded-lg text-lg focus:ring-2 focus:ring-blue-600">
                         <option value="">-- Select Cluster --</option>
                         <option value="South">South</option>
@@ -54,7 +54,7 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">👤 Employee Name *</label>
                     <select id="employeeName" class="w-full px-4 py-3 border-2 ubl-border rounded-lg text-lg focus:ring-2 focus:ring-blue-600" disabled>
-                        <option value="">-- Select Cluster First! --</option>
+                        <option value="">-- Select Cluster First --</option>
                     </select>
                 </div>
 
@@ -77,7 +77,7 @@
                         <span id="locationBtnText">Click to Get Location</span>
                     </button>
                     <div id="locationInfo" style="display: none;" class="mt-3 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-                        <p class="text-sm font-semibold text-blue-800">✅ Location Identified!</p>
+                        <p class="text-sm font-semibold text-blue-800">✅ Location Captured!</p>
                         <p class="text-sm mt-1"><strong>Coordinates:</strong> <span id="coords"></span></p>
                         <p class="text-sm"><strong>Address:</strong> <span id="addr"></span></p>
                     </div>
@@ -91,21 +91,51 @@
 
                 <!-- Submit Button -->
                 <button id="submitBtn" class="w-full ubl-gradient text-white px-6 py-5 rounded-lg text-xl font-bold hover:opacity-90 transition mt-4">
-                    <span id="submitText">Submit Record ✓</span>
+                    <span id="submitText">✓ SUBMIT ATTENDANCE</span>
                 </button>
             </div>
         </div>
         
         <!-- Footer -->
         <div class="text-center mt-4 text-gray-600 text-sm">
-            <p>© Learning & Development - Attendance Management System</p>
+            <p>© United Bank Limited - Attendance Management System</p>
         </div>
     </div>
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4blMS4G_mIhNLi2o_TUDo6dWwqaJ2c-Cb6BXiWzLu_0Mm-VLdiHv7QnsRjOsunDWc/exec';
         let locationData = null;
-        let submittedNames = [];
+
+        // Check if device has already submitted today
+        function hasSubmittedToday() {
+            const lastSubmit = localStorage.getItem('lastSubmitDate');
+            const today = new Date().toLocaleDateString('en-US');
+            return lastSubmit === today;
+        }
+
+        // Lock the form if already submitted today
+        function checkAndLockForm() {
+            if (hasSubmittedToday()) {
+                document.getElementById('cluster').disabled = true;
+                document.getElementById('employeeName').disabled = true;
+                document.getElementById('status').disabled = true;
+                document.getElementById('locationBtn').disabled = true;
+                document.getElementById('notes').disabled = true;
+                document.getElementById('submitBtn').disabled = true;
+                
+                // Show locked message
+                const errorMsg = document.getElementById('errorMsg');
+                const errorText = document.getElementById('errorText');
+                errorText.textContent = '🔒 Attendance already submitted from this device today. Please use a different device or try again tomorrow.';
+                errorMsg.style.display = 'block';
+                errorMsg.style.backgroundColor = '#FEF3C7';
+                errorMsg.style.borderColor = '#F59E0B';
+                errorMsg.querySelector('span').style.color = '#92400E';
+                
+                return true;
+            }
+            return false;
+        }
 
         // Employee data by cluster
         const employees = {
@@ -123,8 +153,7 @@
                 'Khawaja Fahad Tabish',
                 'Javed Hussain',
                 'Nadia Batool',
-                'Radiya Faysal',
-                'Khadija Adil'
+                'Radiya Batool'
             ],
             'North': [
                 'Anjum Minhas',
@@ -133,20 +162,10 @@
             ]
         };
 
-        // Load submitted names from storage
-        function loadSubmittedNames() {
-            const stored = localStorage.getItem('submittedNames');
-            if (stored) {
-                submittedNames = JSON.parse(stored);
-            }
-        }
-
-        // Save submitted names to storage
-        function saveSubmittedNames() {
-            localStorage.setItem('submittedNames', JSON.stringify(submittedNames));
-        }
-
-        loadSubmittedNames();
+        // Check form lock on page load
+        window.onload = function() {
+            checkAndLockForm();
+        };
 
         function showError(msg) {
             document.getElementById('errorText').textContent = msg;
@@ -175,15 +194,10 @@
             if (cluster && employees[cluster]) {
                 employeeSelect.disabled = false;
                 employees[cluster].forEach(name => {
-                    // Only show names that haven't been submitted today
-                    const today = new Date().toLocaleDateString('en-US');
-                    const key = `${name}_${today}`;
-                    if (!submittedNames.includes(key)) {
-                        const option = document.createElement('option');
-                        option.value = name;
-                        option.textContent = name;
-                        employeeSelect.appendChild(option);
-                    }
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    employeeSelect.appendChild(option);
                 });
             } else {
                 employeeSelect.disabled = true;
@@ -294,27 +308,16 @@
             })
             .then(response => response.text())
             .then(data => {
+                // Mark device as submitted for today
+                const today = new Date().toLocaleDateString('en-US');
+                localStorage.setItem('lastSubmitDate', today);
+                
                 showSuccess();
                 
-                // Add name to submitted list
-                const today = now.toLocaleDateString('en-US');
-                const key = `${name}_${today}`;
-                submittedNames.push(key);
-                saveSubmittedNames();
-                
-                // Reset form
-                document.getElementById('cluster').value = '';
-                document.getElementById('employeeName').innerHTML = '<option value="">-- Select Cluster First --</option>';
-                document.getElementById('employeeName').disabled = true;
-                document.getElementById('status').value = '';
-                document.getElementById('notes').value = '';
-                locationData = null;
-                document.getElementById('locationInfo').style.display = 'none';
-                document.getElementById('locationBtnText').textContent = 'Click to Get Location';
-                
-                submitBtn.disabled = false;
-                submitText.textContent = 'Submit Record ✓';
-                submitBtn.style.opacity = '1';
+                // Lock the form after successful submission
+                setTimeout(() => {
+                    checkAndLockForm();
+                }, 2000);
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             })
@@ -322,7 +325,7 @@
                 console.error('Error:', error);
                 showError('Failed to submit. Please try again.');
                 submitBtn.disabled = false;
-                submitText.textContent = 'Submit Record ✓';
+                submitText.textContent = '✓ SUBMIT ATTENDANCE';
                 submitBtn.style.opacity = '1';
             });
         };
