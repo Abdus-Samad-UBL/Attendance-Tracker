@@ -68,7 +68,7 @@
                         <option value="Personal/Sick Leave">Personal/Sick Leave</option>
                         <option value="Annual Leave">Annual Leave</option>
                     </select>
-                    <p id="lateNotice" style="display: none;" class="mt-2 text-sm text-orange-600 font-semibold">⏰ It's past 9:00 AM - Try to reach on time!.</p>
+                    <p id="lateNotice" style="display: none;" class="mt-2 text-sm text-orange-600 font-semibold">⏰ It's past 9:00 AM - Try to be more punctual!.</p>
                 </div>
 
                 <!-- Location -->
@@ -166,7 +166,31 @@
         // Check form lock on page load
         window.onload = function() {
             checkAndLockForm();
+            checkTimeForPresent();
         };
+
+        // Check if it's past 9:02 AM Pakistan time and hide "Present" option
+        function checkTimeForPresent() {
+            // Get current time in Pakistan timezone (PKT = UTC+5)
+            const now = new Date();
+            const pakistanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+            const hours = pakistanTime.getHours();
+            const minutes = pakistanTime.getMinutes();
+            
+            // Convert to total minutes since midnight for easy comparison
+            const currentTotalMinutes = (hours * 60) + minutes;
+            const cutoffTotalMinutes = (9 * 60) + 2; // 9:02 AM = 542 minutes
+            
+            // If time is 9:02 AM or later
+            if (currentTotalMinutes >= cutoffTotalMinutes) {
+                const presentOption = document.getElementById('presentOption');
+                if (presentOption) {
+                    presentOption.style.display = 'none';
+                    presentOption.disabled = true;
+                }
+                document.getElementById('lateNotice').style.display = 'block';
+            }
+        }
 
         function showError(msg) {
             document.getElementById('errorText').textContent = msg;
