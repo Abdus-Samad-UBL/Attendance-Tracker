@@ -207,7 +207,7 @@
             document.getElementById('errorMsg').style.display = 'none';
             setTimeout(() => {
                 document.getElementById('successMsg').style.display = 'none';
-            }, 5000);
+            }, 8000);
         }
 
         // Update employee dropdown based on cluster - WITH REAL-TIME FILTERING
@@ -215,7 +215,7 @@
             const cluster = this.value;
             const employeeSelect = document.getElementById('employeeName');
             
-            employeeSelect.innerHTML = '<option value="">-- Loading names... --</option>';
+            employeeSelect.innerHTML = '<option value="">-- Verifying...... --</option>';
             employeeSelect.disabled = true;
             
             if (cluster && employees[cluster]) {
@@ -379,7 +379,7 @@
                 setTimeout(() => {
                     document.getElementById('successMsg').style.display = 'none';
                     checkAndLockForm();
-                }, 5000);
+                }, 8000);
                 
                 submitBtn.disabled = false;
                 submitText.textContent = '✓ Submit Attendance';
