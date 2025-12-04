@@ -68,7 +68,7 @@
                         <option value="Personal/Sick Leave">Personal/Sick Leave</option>
                         <option value="Annual Leave">Annual Leave</option>
                     </select>
-                    <p id="lateNotice" style="display: none;" class="mt-2 text-sm text-orange-600 font-semibold">⏰ It's past 9:00 AM - "Present" option is no longer available.</p>
+                    <p id="lateNotice" style="display: none;" class="mt-2 text-sm text-orange-600 font-semibold">⏰ It's past 9:02 AM - "Present" option is no longer available.</p>
                 </div>
 
                 <!-- Leave Dates (only show for leaves) -->
@@ -85,7 +85,7 @@
                                 <input type="date" id="leaveEndDate" class="w-full px-3 py-2 border-2 border-yellow-400 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500">
                             </div>
                         </div>
-                        <p class="text-xs text-yellow-700 mt-2">Leave will be marked for all dates in this range</p>
+                        <p class="text-xs text-yellow-700 mt-2" id="leaveHint">Leave will be marked for all dates in this range</p>
                     </div>
                 </div>
 
@@ -187,8 +187,10 @@
             checkAndLockForm();
             checkTimeForPresent();
             
-            // Set min date for leave dates to today
+            // Set min date for leave dates
             const today = new Date().toISOString().split('T')[0];
+            
+            // For Personal/Sick Leave: start from today
             document.getElementById('leaveStartDate').setAttribute('min', today);
             document.getElementById('leaveEndDate').setAttribute('min', today);
         };
@@ -233,9 +235,28 @@
         document.getElementById('status').addEventListener('change', function() {
             const status = this.value;
             const leaveDatesSection = document.getElementById('leaveDatesSection');
+            const leaveStartDate = document.getElementById('leaveStartDate');
+            const leaveHint = document.getElementById('leaveHint');
             
             if (status === 'Personal/Sick Leave' || status === 'Annual Leave') {
                 leaveDatesSection.style.display = 'block';
+                
+                // Set date constraints based on leave type
+                const today = new Date();
+                
+                if (status === 'Annual Leave') {
+                    // Annual Leave: can mark 2 days back
+                    const twoDaysAgo = new Date(today);
+                    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                    const minDate = twoDaysAgo.toISOString().split('T')[0];
+                    leaveStartDate.setAttribute('min', minDate);
+                    leaveHint.textContent = 'You can mark Annual Leave starting from 2 days ago';
+                } else {
+                    // Personal/Sick Leave: only from today
+                    const todayStr = today.toISOString().split('T')[0];
+                    leaveStartDate.setAttribute('min', todayStr);
+                    leaveHint.textContent = 'Leave will be marked for all dates in this range';
+                }
             } else {
                 leaveDatesSection.style.display = 'none';
             }
@@ -250,7 +271,7 @@
             const cluster = this.value;
             const employeeSelect = document.getElementById('employeeName');
             
-            employeeSelect.innerHTML = '<option value="">-- Loading names... --</option>';
+            employeeSelect.innerHTML = '<option value="">⏳ Verifying... Please Wait...</option>';
             employeeSelect.disabled = true;
             
             if (cluster && employees[cluster]) {
